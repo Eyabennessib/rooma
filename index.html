@@ -1,0 +1,170 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Roomate – Chore Rotation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 24px; max-width: 900px; }
+    h1 { margin-bottom: 4px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); }
+    form, .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; }
+    input, button { padding: 10px; font-size: 14px; }
+    button { cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#eee; }
+    .row { display:flex; gap:8px; flex-wrap: wrap; }
+    .muted { color:#666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Roomate</h1>
+  <div class="muted">Share chores fairly. No drama, just rotations.</div>
+
+  <div class="grid" style="margin-top:20px">
+    <form id="houseForm">
+      <h3>Create Household</h3>
+      <input id="houseName" placeholder="Household name" required />
+      <button type="submit">Create</button>
+      <div class="muted" id="houseInfo"></div>
+    </form>
+
+    <form id="memberForm">
+      <h3>Add Member</h3>
+      <input id="memberName" placeholder="Member name" required />
+      <input id="memberEmail" placeholder="Email (optional)" />
+      <button type="submit">Add</button>
+    </form>
+
+    <form id="choreForm">
+      <h3>Add Chore</h3>
+      <input id="choreTitle" placeholder="Chore title (e.g., Kitchen)" required />
+      <button type="submit">Add</button>
+    </form>
+
+    <div class="card">
+      <h3>Generate Weekly Rotation</h3>
+      <div class="row">
+        <input id="weekStart" type="date" />
+        <button id="rotateBtn">Create assignments</button>
+      </div>
+      <div class="muted">Leave date blank to use this week’s Monday.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h3>Current Week Assignments</h3>
+    <div class="row">
+      <input id="filterWeek" type="date" />
+      <button id="loadWeek">Load</button>
+    </div>
+    <table id="assignTable" style="margin-top:10px">
+      <thead>
+        <tr><th>Chore</th><th>Assigned To</th><th>Status</th><th>Proof</th><th>Action</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+<script>
+const API = "http://localhost:5000/api";
+
+let householdId = null;
+
+// Helpers
+function isoMonday(d) {
+  const dt = d ? new Date(d) : new Date();
+  const day = dt.getDay(); // 0=Sun..6=Sat
+  const diff = (day === 0 ? -6 : 1) - day; // shift to Monday
+  const mon = new Date(dt);
+  mon.setDate(dt.getDate() + diff);
+  mon.setHours(0,0,0,0);
+  return mon.toISOString().slice(0,10);
+}
+function q(sel){ return document.querySelector(sel); }
+function rowHTML(a){
+  const badge = a.status === 'done' ? 'style="background:#d1f7d6"' : '';
+  return `<tr>
+    <td>${a.chore_title}</td>
+    <td>${a.member_name}</td>
+    <td><span class="badge" ${badge}>${a.status}</span></td>
+    <td>${a.proof_url ? `<a href="${a.proof_url}" target="_blank">link</a>` : ''}</td>
+    <td>${a.status==='assigned'
+      ? `<button data-id="${a.id}" class="doneBtn">Mark done</button>
+         <input placeholder="proof URL (optional)" class="proofInput" data-id="${a.id}" style="width:180px"/>`
+      : ''}</td>
+  </tr>`;
+}
+async function api(path, opts={}){
+  const res = await fetch(`${API}${path}`, Object.assign({headers:{'Content-Type':'application/json'}}, opts));
+  if(!res.ok){ throw new Error((await res.json()).error || 'request failed'); }
+  return res.json();
+}
+
+// Create household
+q("#houseForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const name = q("#houseName").value.trim();
+  if(!name) return;
+  const data = await api(`/households`, {method:'POST', body: JSON.stringify({name})});
+  householdId = data.id;
+  q("#houseInfo").textContent = `Created household #${householdId} (“${data.name}”).`;
+});
+
+// Add member
+q("#memberForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  if(!householdId){ alert("Create a household first."); return; }
+  const name = q("#memberName").value.trim();
+  const email = q("#memberEmail").value.trim() || null;
+  await api(`/households/${householdId}/members`, {method:'POST', body: JSON.stringify({name, email})});
+  q("#memberName").value = ""; q("#memberEmail").value="";
+  alert("Member added.");
+});
+
+// Add chore
+q("#choreForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  if(!householdId){ alert("Create a household first."); return; }
+  const title = q("#choreTitle").value.trim();
+  await api(`/households/${householdId}/chores`, {method:'POST', body: JSON.stringify({title})});
+  q("#choreTitle").value = "";
+  alert("Chore added.");
+});
+
+// Rotate
+q("#rotateBtn").addEventListener("click", async ()=>{
+  if(!householdId){ alert("Create a household first."); return; }
+  const ws = q("#weekStart").value || isoMonday();
+  await api(`/households/${householdId}/rotate`, {method:'POST', body: JSON.stringify({week_start: ws})});
+  await loadAssignments();
+});
+
+// Load assignments
+q("#loadWeek").addEventListener("click", loadAssignments);
+async function loadAssignments(){
+  if(!householdId){ alert("Create a household first."); return; }
+  const ws = q("#filterWeek").value || isoMonday();
+  const data = await api(`/households/${householdId}/assignments/current?week_start=${ws}`);
+  const tbody = q("#assignTable tbody");
+  tbody.innerHTML = data.assignments.map(rowHTML).join("");
+
+  // wire up buttons
+  document.querySelectorAll(".doneBtn").forEach(btn=>{
+    btn.addEventListener("click", async (e)=>{
+      const id = e.target.getAttribute("data-id");
+      const proof = document.querySelector(`.proofInput[data-id="${id}"]`)?.value || "";
+      const res = await fetch(`${API}/assignments/${id}/complete`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({proof_url: proof})
+      });
+      if(!res.ok){ alert("Failed to complete."); return; }
+      await loadAssignments();
+    });
+  });
+}
+</script>
+</body>
+</html>
