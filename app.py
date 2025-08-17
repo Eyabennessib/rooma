@@ -279,6 +279,57 @@ def list_households():
     conn.close()
     return jsonify({"households": data})
 
+# Renommer une colocation
+@app.route("/api/households/<int:hid>", methods=["PUT"])
+def rename_household(hid):
+    data = request.get_json(silent=True) or {}
+    name = data.get("name")
+    if not name:
+        return jsonify({"error": "name is required"}), 400
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE households SET name=? WHERE id=?", (name, hid))
+    if cur.rowcount == 0:
+        conn.close()
+        return jsonify({"error": "not found"}), 404
+    conn.commit(); conn.close()
+    return jsonify({"id": hid, "name": name})
+
+# Supprimer une colocation (cascade sur membres/chores/assignments grâce aux FK)
+@app.route("/api/households/<int:hid>", methods=["DELETE"])
+def delete_household(hid):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM households WHERE id=?", (hid,))
+    if cur.rowcount == 0:
+        conn.close()
+        return jsonify({"error": "not found"}), 404
+    conn.commit(); conn.close()
+    return jsonify({"deleted": True, "id": hid})
+
+# (bonus) supprimer membre
+@app.route("/api/households/<int:hid>/members/<int:mid>", methods=["DELETE"])
+def delete_member(hid, mid):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM members WHERE id=? AND household_id=?", (mid, hid))
+    if cur.rowcount == 0:
+        conn.close()
+        return jsonify({"error": "not found"}), 404
+    conn.commit(); conn.close()
+    return jsonify({"deleted": True})
+
+# (bonus) supprimer tâche
+@app.route("/api/households/<int:hid>/chores/<int:cid>", methods=["DELETE"])
+def delete_chore(hid, cid):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM chores WHERE id=? AND household_id=?", (cid, hid))
+    if cur.rowcount == 0:
+        conn.close()
+        return jsonify({"error": "not found"}), 404
+    conn.commit(); conn.close()
+    return jsonify({"deleted": True})
 
 if __name__ == "__main__":
     init_db()

@@ -1,379 +1,259 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 <head>
-  <meta charset="utf-8"/>
-  <title>Roomate – Chore Rotation</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <style>
-    :root{
-      --bg:#0f172a;          /* slate-900 */
-      --card:#111827;        /* gray-900 */
-      --muted:#94a3b8;       /* slate-400 */
-      --text:#e5e7eb;        /* gray-200 */
-      --accent:#22d3ee;      /* cyan-400 */
-      --ok:#34d399;          /* emerald-400 */
-      --warn:#f59e0b;        /* amber-500 */
-      --err:#ef4444;         /* red-500 */
-      --border:#1f2937;      /* gray-800 */
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; padding:24px; font-family: ui-sans-serif, system-ui, Arial;
-      background: radial-gradient(1200px 600px at 10% -10%, #0b1025, transparent),
-                  radial-gradient(800px 500px at 90% 0%, #10253a, transparent),
-                  var(--bg);
-      color:var(--text);
-    }
-    header{display:flex; gap:12px; justify-content:space-between; align-items:center; margin-bottom:18px}
-    .title{font-size:28px; font-weight:700; letter-spacing:.3px}
-    .lang{display:flex; gap:8px}
-    .pill{
-      border:1px solid var(--border); padding:6px 10px; border-radius:999px; color:var(--muted); cursor:pointer;
-      background: linear-gradient(180deg, #0f1a31, #0b1224);
-    }
-    .pill.active{color:var(--text); border-color:var(--accent); box-shadow:0 0 0 1px #0ff3 inset}
-    .grid{display:grid; gap:16px; grid-template-columns: repeat(auto-fit,minmax(280px,1fr));}
-    .card{
-      border:1px solid var(--border); border-radius:16px; padding:16px;
-      background: linear-gradient(180deg, #0f1a31, #0c1428);
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    }
-    h3{margin:0 0 10px 0; font-size:16px}
-    input, button, select{
-      width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
-      background:#0b1326; color:var(--text); outline:none;
-    }
-    input:focus{border-color:var(--accent)}
-    button{
-      margin-top:8px; cursor:pointer; font-weight:600;
-      background:linear-gradient(180deg, #1c2d4f, #152440); border-color:#213257;
-    }
-    button.primary{background:linear-gradient(180deg, #0ea5b0, #0891a6); border-color:#0ea5b0; color:#001b22}
-    .muted{color:var(--muted); font-size:12px}
-    table{width:100%; border-collapse:collapse; margin-top:10px}
-    th, td{border-bottom:1px solid var(--border); padding:8px; text-align:left; font-size:14px}
-    .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-    .badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#1f2937; color:#cbd5e1}
-    .badge.ok{background:#06381f; color:#a7f3d0}
-    .toast{
-      position:fixed; right:16px; bottom:16px; padding:12px 14px; border-radius:12px; font-size:14px;
-      background:#0b1326; border:1px solid var(--border); color:var(--text); box-shadow:0 10px 30px rgba(0,0,0,.3)
-    }
-    .toast.err{border-color:var(--err); color:#fecaca}
-    .section-title{font-size:14px; color:#cbd5e1; margin:2px 0 10px}
-    .kicker{color:var(--muted); font-size:13px}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Roomate – Rotations</title>
+<style>
+  :root{
+    --bg:#fff6fb; --card:#ffffff; --text:#2b2b2b; --muted:#5c5c5c; --border:#f1c4ff;
+    --accent:#ff6ec7; --accent2:#ffd166; --accent3:#06d6a0; --accent4:#ff8c42; --accent5:#7b61ff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Arial; color:var(--text);
+    background:
+      radial-gradient(600px 300px at 10% 0%, #ffe6fa 20%, transparent 70%),
+      radial-gradient(700px 350px at 90% 10%, #f3e8ff 20%, transparent 70%),
+      var(--bg); min-height:100vh;
+  }
+  /* Stickers */
+  .stickers{position:fixed; inset:0; pointer-events:none; opacity:.15; z-index:0;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 64 64'><path fill='%23ff6ec7' d='M20 30c-6-8 4-18 12-16 7 2 10 12 3 18-6 5-15 3-15-2z'/></svg>"),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 64 64'><path fill='%2306d6a0' d='M8 40c8-10 22-10 30 0 2 3-1 8-6 8H14c-5 0-8-5-6-8z'/></svg>"),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 64 64'><rect x='10' y='24' width='44' height='20' rx='4' fill='%23ffd166'/><rect x='14' y='28' width='36' height='12' rx='2' fill='%23fff2c2'/></svg>"),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 64 64'><path fill='%23ff8c42' d='M12 44h40l-3-12H15l-3 12z'/><rect x='18' y='20' width='28' height='12' rx='2' fill='%23ffd1b2'/></svg>"),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 64 64'><rect x='8' y='26' width='48' height='16' rx='6' fill='%237b61ff'/><rect x='12' y='18' width='40' height='8' rx='3' fill='%23b6a6ff'/></svg>");
+    background-size:160px; background-repeat:repeat; background-position:0 0, 80px 120px, 40px 240px, 120px 360px, 200px 60px;
+  }
+  header{position:sticky; top:0; z-index:2; backdrop-filter: blur(8px); background: rgba(255,255,255,.7);
+    border-bottom: 2px solid var(--border); padding:14px 18px; display:flex; align-items:center; gap:12px; justify-content:space-between;}
+  .title{font-size:24px; font-weight:800}
+  .lang button{border:2px solid var(--border); background:#fff; color:#3d3d3d; padding:6px 10px; border-radius:999px; cursor:pointer}
+  .lang .active{border-color:var(--accent); color:#111}
+  main{padding:18px; position:relative; z-index:1}
+  .grid{display:grid; gap:16px; grid-template-columns: repeat(auto-fit,minmax(280px,1fr))}
+  .card{background:#fff; border:2px solid var(--border); border-radius:18px; padding:14px;
+    box-shadow: 0 8px 20px rgba(123,97,255,0.12), 0 4px 10px rgba(255,110,199,0.08);}
+  h3{margin:6px 0 10px 0; font-size:16px}
+  .muted{color:var(--muted); font-size:12px}
+  input, button, select{width:100%; padding:10px 12px; border-radius:12px; border:2px solid var(--border); background:#fff; outline:none}
+  input:focus, select:focus{border-color:var(--accent5)}
+  button{cursor:pointer; font-weight:700}
+  .primary{background: linear-gradient(90deg, var(--accent), var(--accent5), var(--accent2)); color:#111; border-color:transparent}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  table{width:100%; border-collapse:collapse; margin-top:8px}
+  th, td{border-bottom:2px solid var(--border); padding:8px; font-size:14px; text-align:left}
+  .chip{display:inline-block; padding:2px 8px; border-radius:999px; background:#eef; border:1px solid var(--border)}
+  .chip.done{background:#e6fff5; border-color:#b7f7df}
+  .toolbar{display:flex; gap:8px; margin-top:6px}
+  .tiny{padding:6px 8px; font-size:12px}
+  .toast{position:fixed; right:12px; bottom:12px; background:#111; color:#fff; padding:10px 12px; border-radius:10px; opacity:.95; display:none}
+</style>
 </head>
 <body>
-  <header>
-    <div>
-      <div class="title">Roomate</div>
-      <div class="kicker" data-i="tagline">Share chores fairly. No drama, just rotations.</div>
-    </div>
-    <div class="lang">
-      <button class="pill active" id="lang-en">EN</button>
-      <button class="pill" id="lang-fr">FR</button>
-    </div>
-  </header>
+<div class="stickers"></div>
 
-  <div class="card" style="margin-bottom:16px">
-    <div class="section-title" data-i="activeHouse">Active household</div>
-    <div id="houseInfo" class="muted">—</div>
-    <div class="row" style="margin-top:8px">
-      <select id="houseSelect"></select>
-      <button id="useHouseBtn" class="primary" data-i="useThis">Use this</button>
+<header>
+  <div class="title">Roomate</div>
+  <div class="lang">
+    <button id="lang-fr" class="active">FR</button>
+    <button id="lang-en">EN</button>
+  </div>
+</header>
+
+<main>
+  <!-- Household selector + actions -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="row">
+      <select id="houseSelect" style="flex:1"></select>
+      <div class="toolbar">
+        <button id="useHouse" class="tiny">Utiliser</button>
+        <button id="renameHouse" class="tiny">Renommer</button>
+        <button id="deleteHouse" class="tiny" style="background:#ffe2e2;border-color:#ffc8c8">Supprimer</button>
+      </div>
     </div>
+    <div id="houseInfo" class="muted" style="margin-top:6px">—</div>
   </div>
 
   <div class="grid">
+    <!-- Create household -->
     <div class="card">
-      <h3 data-i="createHouse">Create Household</h3>
-      <input id="houseName" placeholder="Household name"/>
-      <button id="createHouseBtn" class="primary" data-i="create">Create</button>
-      <div class="muted" style="margin-top:6px" data-i="houseHelp">Give it a short name (e.g., Flat 12B).</div>
+      <h3 data-i="createHouse">Créer une colocation</h3>
+      <input id="houseName" placeholder="Appartement Massy"/>
+      <button id="createHouse" class="primary" data-i="create">Créer</button>
+      <div class="muted" data-i="houseHelp">Donnez-lui un nom court (ex: Appart 12B).</div>
     </div>
 
+    <!-- Members -->
     <div class="card">
-      <h3 data-i="addMember">Add Member</h3>
-      <input id="memberName" placeholder="Name"/>
-      <input id="memberEmail" placeholder="Email (optional)" style="margin-top:6px"/>
-      <button id="addMemberBtn" data-i="add">Add</button>
-      <div class="muted" style="margin-top:6px" data-i="memberHelp">Create/select a household first.</div>
-    </div>
-
-    <div class="card">
-      <h3 data-i="addChore">Add Chore</h3>
-      <input id="choreTitle" placeholder="e.g., Kitchen, Bathroom"/>
-      <button id="addChoreBtn" data-i="add">Add</button>
-    </div>
-
-    <div class="card">
-      <h3 data-i="rotation">Generate Weekly Rotation</h3>
-      <div class="row">
-        <input id="weekStart" type="date"/>
-        <button id="rotateBtn" class="primary" data-i="generate">Create assignments</button>
+      <h3 data-i="addMember">Ajouter un membre</h3>
+      <input id="memberName" placeholder="Nom"/>
+      <div class="row" style="width:100%">
+        <input id="memberEmail" placeholder="Email (optionnel)" style="flex:1"/>
+        <button id="addMember" style="min-width:120px">Ajouter</button>
       </div>
-      <div class="muted" style="margin-top:6px" data-i="mondayNote">Leave blank to use this week’s Monday.</div>
+      <ul id="membersList" style="list-style:none; padding-left:0; margin:8px 0 0 0" class="muted"></ul>
+    </div>
+
+    <!-- Chores -->
+    <div class="card">
+      <h3 data-i="addChore">Ajouter une tâche</h3>
+      <div class="row" style="width:100%">
+        <input id="choreTitle" placeholder="Cuisine, Salle de bain…"/>
+        <button id="addChore" style="min-width:120px">Ajouter</button>
+      </div>
+      <ul id="choresList" style="list-style:none; padding-left:0; margin:8px 0 0 0" class="muted"></ul>
+    </div>
+
+    <!-- Rotation -->
+    <div class="card">
+      <h3>Générer la rotation hebdomadaire</h3>
+      <div class="row" style="width:100%">
+        <input id="weekStart" type="date" inputmode="numeric" pattern="\\d{4}-\\d{2}-\\d{2}" placeholder="YYYY-MM-DD" style="flex:1"/>
+        <button id="btnThisWeek" class="tiny" title="Mettre le lundi de cette semaine">Cette semaine</button>
+        <button id="rotate" class="primary">Créer les affectations</button>
+      </div>
+      <div class="muted">Utilise “Cette semaine” si le sélecteur de date ne marche pas.</div>
     </div>
   </div>
 
-  <div class="grid" style="margin-top:16px">
-    <div class="card">
-      <h3 data-i="members">Members</h3>
-      <ul id="membersList" class="muted" style="list-style:none; padding-left:0; margin:0"></ul>
-    </div>
-    <div class="card">
-      <h3 data-i="chores">Chores</h3>
-      <ul id="choresList" class="muted" style="list-style:none; padding-left:0; margin:0"></ul>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:16px">
-    <h3 data-i="currentWeek">Current Week Assignments</h3>
+  <!-- Assignments -->
+  <div class="card" style="margin-top:12px">
+    <h3>Affectations de la semaine</h3>
     <div class="row">
-      <input id="filterWeek" type="date"/>
-      <button id="loadWeek" data-i="load">Load</button>
+      <input id="filterWeek" type="date" inputmode="numeric" pattern="\\d{4}-\\d{2}-\\d{2}" placeholder="YYYY-MM-DD" />
+      <button id="load">Charger</button>
     </div>
-    <table id="assignTable">
+    <table>
       <thead>
-        <tr>
-          <th data-i="thChore">Chore</th>
-          <th data-i="thAssigned">Assigned To</th>
-          <th data-i="thStatus">Status</th>
-          <th data-i="thProof">Proof</th>
-          <th data-i="thAction">Action</th>
-        </tr>
+        <tr><th>Tâche</th><th>Assigné à</th><th>Statut</th><th>Preuve</th><th>Action</th></tr>
       </thead>
-      <tbody></tbody>
+      <tbody id="assignBody"></tbody>
     </table>
   </div>
+</main>
 
-  <div id="toast" class="toast" style="display:none"></div>
+<div id="toast" class="toast"></div>
 
 <script>
 const API = "http://127.0.0.1:5000/api";
 
-const i18n = {
-  en: {
-    tagline: "Share chores fairly. No drama, just rotations.",
-    activeHouse: "Active household",
-    useThis: "Use this",
-    createHouse: "Create Household",
-    create: "Create",
-    houseHelp: "Give it a short name (e.g., Flat 12B).",
-    addMember: "Add Member",
-    add: "Add",
-    memberHelp: "Create/select a household first.",
-    addChore: "Add Chore",
-    rotation: "Generate Weekly Rotation",
-    generate: "Create assignments",
-    mondayNote: "Leave blank to use this week’s Monday.",
-    members: "Members",
-    chores: "Chores",
-    currentWeek: "Current Week Assignments",
-    load: "Load",
-    thChore: "Chore",
-    thAssigned: "Assigned To",
-    thStatus: "Status",
-    thProof: "Proof",
-    thAction: "Action",
-    done: "Mark done",
-    noHouse: "Create a household first.",
-    created: "Household created.",
-    memberAdded: "Member added.",
-    choreAdded: "Chore added.",
-    generated: "Assignments created.",
-    loaded: "Assignments loaded.",
-    err: "Something went wrong."
-  },
-  fr: {
-    tagline: "Partagez les tâches équitablement. Zéro drama, juste des rotations.",
-    activeHouse: "Colocation active",
-    useThis: "Utiliser",
-    createHouse: "Créer une colocation",
-    create: "Créer",
-    houseHelp: "Donnez-lui un nom court (ex: Appart 12B).",
-    addMember: "Ajouter un membre",
-    add: "Ajouter",
-    memberHelp: "Créez/sélectionnez d’abord une colocation.",
-    addChore: "Ajouter une tâche",
-    rotation: "Générer la rotation hebdomadaire",
-    generate: "Créer les affectations",
-    mondayNote: "Laissez vide pour utiliser le lundi de cette semaine.",
-    members: "Membres",
-    chores: "Tâches",
-    currentWeek: "Affectations de la semaine",
-    load: "Charger",
-    thChore: "Tâche",
-    thAssigned: "Assigné à",
-    thStatus: "Statut",
-    thProof: "Preuve",
-    thAction: "Action",
-    done: "Marquer fait",
-    noHouse: "Créez d’abord une colocation.",
-    created: "Colocation créée.",
-    memberAdded: "Membre ajouté.",
-    choreAdded: "Tâche ajoutée.",
-    generated: "Affectations créées.",
-    loaded: "Affectations chargées.",
-    err: "Une erreur s’est produite."
-  }
+/* i18n */
+const dict = {
+  fr:{created:"Colocation créée.", memberAdded:"Membre ajouté.", choreAdded:"Tâche ajoutée.", loaded:"Affectations chargées.",
+      generated:"Affectations créées.", noHouse:"Sélectionnez une colocation.", confirmDelete:"Supprimer cette colocation ?"},
+  en:{created:"Household created.", memberAdded:"Member added.", choreAdded:"Chore added.", loaded:"Assignments loaded.",
+      generated:"Assignments created.", noHouse:"Select a household.", confirmDelete:"Delete this household?"}
 };
+let lang = localStorage.getItem("roomate_lang") || "fr";
+function t(k){ return (dict[lang]||dict.fr)[k] || k; }
+document.getElementById("lang-fr").onclick=()=>{lang="fr";localStorage.setItem("roomate_lang","fr");location.reload();}
+document.getElementById("lang-en").onclick=()=>{lang="en";localStorage.setItem("roomate_lang","en");location.reload();}
 
-let lang = localStorage.getItem("roomate_lang") || "en";
-let householdId = null;
+/* helpers */
+function toast(msg){ const el=document.getElementById("toast"); el.textContent=msg; el.style.display="block"; clearTimeout(el._t); el._t=setTimeout(()=>el.style.display="none",2000); }
+function isoMonday(d){ const dt=d?new Date(d):new Date(); const day=dt.getDay(); const diff=(day===0?-6:1)-day; const m=new Date(dt); m.setDate(dt.getDate()+diff); m.setHours(0,0,0,0); return m.toISOString().slice(0,10); }
+async function api(path, opts={}){ const res=await fetch(API+path, Object.assign({headers:{'Content-Type':'application/json'}}, opts)); if(!res.ok){ let msg="Error"; try{msg=(await res.json()).error||msg;}catch{}; throw new Error(msg);} return res.json(); }
+function li(text, delCb){ const el=document.createElement("li"); el.style.marginTop="6px"; el.innerHTML=text; if(delCb){ const b=document.createElement("button"); b.textContent="🗑"; b.className="tiny"; b.style.marginLeft="8px"; b.onclick=delCb; el.appendChild(b);} return el; }
 
-function t(key){ return (i18n[lang]||i18n.en)[key] }
-function setLang(l){
-  lang = l; localStorage.setItem("roomate_lang", l);
-  document.querySelectorAll("[data-i]").forEach(el=>{ el.textContent = t(el.getAttribute("data-i")) });
-  document.querySelector("#lang-en").classList.toggle("active", lang==="en");
-  document.querySelector("#lang-fr").classList.toggle("active", lang==="fr");
-}
-document.querySelector("#lang-en").onclick = ()=> setLang("en");
-document.querySelector("#lang-fr").onclick = ()=> setLang("fr");
-setLang(lang);
+/* state */
+let householdId = Number(localStorage.getItem("roomate_active")) || null;
 
-function toast(msg, isErr=false){
-  const el = document.getElementById("toast");
-  el.textContent = msg; el.classList.toggle("err", !!isErr);
-  el.style.display="block"; clearTimeout(el._t);
-  el._t = setTimeout(()=> el.style.display="none", 2400);
-}
+/* elements */
+const houseSelect=document.getElementById("houseSelect"), houseInfo=document.getElementById("houseInfo");
+const membersList=document.getElementById("membersList"), choresList=document.getElementById("choresList"), assignBody=document.getElementById("assignBody");
 
-async function api(path, opts={}){
-  const res = await fetch(`${API}${path}`, Object.assign({headers:{'Content-Type':'application/json'}}, opts));
-  if(!res.ok){
-    let err = t("err");
-    try { const j = await res.json(); if(j.error) err = j.error; } catch{}
-    throw new Error(err);
-  }
-  return res.json();
-}
+/* date defaults */
+function setThisWeek(){ document.getElementById("weekStart").value=isoMonday(); document.getElementById("filterWeek").value=isoMonday(); }
+document.getElementById("btnThisWeek").onclick=setThisWeek; setThisWeek();
 
-function isoMonday(d){
-  const dt = d? new Date(d) : new Date();
-  const day = dt.getDay(); // 0 Sun
-  const diff = (day===0? -6 : 1) - day;
-  const mon = new Date(dt); mon.setDate(dt.getDate()+diff); mon.setHours(0,0,0,0);
-  return mon.toISOString().slice(0,10);
-}
-
-function renderList(el, items, field){
-  el.innerHTML = items.length ? items.map(x=>`<li>${x[field]}</li>`).join("") : `<li class="muted">—</li>`;
-}
-
-function rowHTML(a){
-  const status = a.status === "done" ? `<span class="badge ok">done</span>` : `<span class="badge">assigned</span>`;
-  return `<tr>
-    <td>${a.chore_title}</td>
-    <td>${a.member_name}</td>
-    <td>${status}</td>
-    <td>${a.proof_url ? `<a href="${a.proof_url}" target="_blank">link</a>` : ""}</td>
-    <td>${
-      a.status === "assigned"
-        ? `<div class="row"><input placeholder="proof URL" class="proofInput" data-id="${a.id}" style="width:180px"><button class="doneBtn" data-id="${a.id}">${t("done")}</button></div>`
-        : ""
-    }</td>
-  </tr>`;
-}
-
-async function refreshHousehold(){
-  if(!householdId){ document.getElementById("houseInfo").textContent = "—"; return; }
-  const data = await api(`/households/${householdId}`);
-  document.getElementById("houseInfo").textContent = `#${data.household.id} – ${data.household.name}`;
-  renderList(document.getElementById("membersList"), data.members, "name");
-  renderList(document.getElementById("choresList"), data.chores, "title");
-}
-
+/* load houses */
 async function loadHouseList(){
-  const sel = document.getElementById("houseSelect");
-  const list = await api(`/households`);
-  sel.innerHTML = list.households.map(h=>`<option value="${h.id}">#${h.id} – ${h.name}</option>`).join("") || `<option>—</option>`;
+  const list=await api("/households");
+  houseSelect.innerHTML=list.households.map(h=>`<option value="${h.id}">#${h.id} – ${h.name}</option>`).join("") || `<option value="">—</option>`;
+  if(householdId && [...houseSelect.options].some(o=>Number(o.value)===householdId)) houseSelect.value=String(householdId);
+  await refreshActive();
 }
 
-document.getElementById("useHouseBtn").onclick = async ()=>{
-  const sel = document.getElementById("houseSelect");
-  const id = Number(sel.value);
-  if(!id || isNaN(id)) return;
-  householdId = id;
-  await refreshHousehold();
-  toast(`Household #${id} loaded.`);
-};
+/* refresh active view */
+async function refreshActive(){
+  if(!householdId){ houseInfo.textContent="—"; membersList.innerHTML=""; choresList.innerHTML=""; assignBody.innerHTML=""; return; }
+  const d=await api(`/households/${householdId}`);
+  houseInfo.textContent=`#${d.household.id} – ${d.household.name}`;
+  membersList.innerHTML=""; d.members.forEach(m=>membersList.appendChild(li(`${m.name}${m.email? " — "+m.email:""}`, async()=>{await api(`/households/${householdId}/members/${m.id}`,{method:"DELETE"}); await refreshActive();})));
+  if(d.members.length===0) membersList.innerHTML="<li class='muted'>—</li>";
+  choresList.innerHTML=""; d.chores.forEach(c=>choresList.appendChild(li(c.title, async()=>{await api(`/households/${householdId}/chores/${c.id}`,{method:"DELETE"}); await refreshActive();})));
+  if(d.chores.length===0) choresList.innerHTML="<li class='muted'>—</li>";
+}
 
-document.getElementById("createHouseBtn").onclick = async ()=>{
-  try{
-    const name = document.getElementById("houseName").value.trim();
-    if(!name) return;
-    const d = await api(`/households`, {method:"POST", body: JSON.stringify({name})});
-    householdId = d.id;
-    await loadHouseList();
-    await refreshHousehold();
-    toast(t("created"));
-  }catch(e){ toast(e.message, true); }
-};
+/* actions */
+document.getElementById("useHouse").onclick=async()=>{ const id=Number(houseSelect.value); if(!id) return; householdId=id; localStorage.setItem("roomate_active",String(id)); await refreshActive(); toast("OK"); };
+document.getElementById("renameHouse").onclick=async()=>{ if(!householdId) return toast(t("noHouse")); const name=prompt(lang==="fr"?"Nouveau nom ?":"New name?"); if(!name) return; await api(`/households/${householdId}`,{method:"PUT", body:JSON.stringify({name})}); await loadHouseList(); };
+document.getElementById("deleteHouse").onclick=async()=>{ if(!householdId) return; if(!confirm(t("confirmDelete"))) return; await api(`/households/${householdId}`,{method:"DELETE"}); householdId=null; localStorage.removeItem("roomate_active"); await loadHouseList(); };
 
-document.getElementById("addMemberBtn").onclick = async ()=>{
-  try{
-    if(!householdId){ toast(t("noHouse"), true); return; }
-    const name = document.getElementById("memberName").value.trim();
-    const email = document.getElementById("memberEmail").value.trim() || null;
-    if(!name) return;
-    await api(`/households/${householdId}/members`, {method:"POST", body: JSON.stringify({name, email})});
-    document.getElementById("memberName").value = "";
-    document.getElementById("memberEmail").value = "";
-    await refreshHousehold();
-    toast(t("memberAdded"));
-  }catch(e){ toast(e.message, true); }
-};
+document.getElementById("createHouse").onclick=async()=>{ const name=document.getElementById("houseName").value.trim(); if(!name) return;
+  const d=await api("/households",{method:"POST", body:JSON.stringify({name})}); householdId=d.id; localStorage.setItem("roomate_active",String(d.id));
+  document.getElementById("houseName").value=""; await loadHouseList(); toast(t("created")); };
 
-document.getElementById("addChoreBtn").onclick = async ()=>{
-  try{
-    if(!householdId){ toast(t("noHouse"), true); return; }
-    const title = document.getElementById("choreTitle").value.trim();
-    if(!title) return;
-    await api(`/households/${householdId}/chores`, {method:"POST", body: JSON.stringify({title})});
-    document.getElementById("choreTitle").value = "";
-    await refreshHousehold();
-    toast(t("choreAdded"));
-  }catch(e){ toast(e.message, true); }
-};
+document.getElementById("addMember").onclick=async()=>{ if(!householdId) return toast(t("noHouse"));
+  const name=document.getElementById("memberName").value.trim(); if(!name) return;
+  const email=document.getElementById("memberEmail").value.trim()||null; await api(`/households/${householdId}/members`,{method:"POST", body:JSON.stringify({name,email})});
+  document.getElementById("memberName").value=""; document.getElementById("memberEmail").value=""; await refreshActive(); toast(t("memberAdded")); };
 
-document.getElementById("rotateBtn").onclick = async ()=>{
-  try{
-    if(!householdId){ toast(t("noHouse"), true); return; }
-    const ws = document.getElementById("weekStart").value || isoMonday();
-    await api(`/households/${householdId}/rotate`, {method:"POST", body: JSON.stringify({week_start: ws})});
-    await loadAssignments();
-    toast(t("generated"));
-  }catch(e){ toast(e.message, true); }
-};
+document.getElementById("addChore").onclick=async()=>{ if(!householdId) return toast(t("noHouse"));
+  const title=document.getElementById("choreTitle").value.trim(); if(!title) return;
+  await api(`/households/${householdId}/chores`,{method:"POST", body:JSON.stringify({title})}); document.getElementById("choreTitle").value="";
+  await refreshActive(); toast(t("choreAdded")); };
 
-document.getElementById("loadWeek").onclick = loadAssignments;
+document.getElementById("rotate").onclick=async()=>{ if(!householdId) return toast(t("noHouse"));
+  const ws=document.getElementById("weekStart").value || isoMonday(); await api(`/households/${householdId}/rotate`,{method:"POST", body:JSON.stringify({week_start:ws})});
+  await loadAssignments(); toast(t("generated")); };
+
+document.getElementById("load").onclick=loadAssignments;
 async function loadAssignments(){
-  try{
-    if(!householdId){ toast(t("noHouse"), true); return; }
-    const ws = document.getElementById("filterWeek").value || isoMonday();
-    const data = await api(`/households/${householdId}/assignments/current?week_start=${ws}`);
-    const tbody = document.querySelector("#assignTable tbody");
-    tbody.innerHTML = data.assignments.map(rowHTML).join("") || `<tr><td colspan="5" class="muted">—</td></tr>`;
-    document.querySelectorAll(".doneBtn").forEach(btn=>{
-      btn.onclick = async ()=>{
-        const id = btn.getAttribute("data-id");
-        const proof = document.querySelector(`.proofInput[data-id="${id}"]`)?.value || "";
-        const res = await fetch(`${API}/assignments/${id}/complete`, {
-          method:"POST", headers:{'Content-Type':'application/json'}, body: JSON.stringify({proof_url: proof})
-        });
-        if(!res.ok){ toast(t("err"), true); return; }
-        await loadAssignments();
-      }
-    });
-    toast(t("loaded"));
-  }catch(e){ toast(e.message, true); }
+  if(!householdId) return toast(t("noHouse"));
+  const ws = document.getElementById("filterWeek").value || isoMonday();
+  const d  = await api(`/households/${householdId}/assignments/current?week_start=${ws}`);
+
+  assignBody.innerHTML = d.assignments.map(a=>{
+    const badge = a.status === "done" ? "<span class='chip done'>done</span>" : "<span class='chip'>assigné</span>";
+    return `
+      <tr>
+        <td>${a.chore_title}</td>
+        <td>${a.member_name}</td>
+        <td>${badge}</td>
+        <td>${a.proof_url ? `<a href='${a.proof_url}' target='_blank'>lien</a>` : ""}</td>
+        <td>
+          ${a.status === "assigned"
+            ? `<div class="row">
+                 <input class="proof" data-id="${a.id}" placeholder="URL">
+                 <button class="tiny complete" data-id="${a.id}">Terminer</button>
+               </div>`
+            : ""}
+        </td>
+      </tr>`;
+  }).join("") || `<tr><td colspan="5" class="muted">—</td></tr>`;
+
+  // wire up complete buttons
+  document.querySelectorAll(".complete").forEach(btn=>{
+    btn.onclick = async ()=>{
+      const id    = btn.getAttribute("data-id");
+      const proof = document.querySelector(`.proof[data-id="${id}"]`)?.value || "";
+      const res   = await fetch(`${API}/assignments/${id}/complete`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({proof_url: proof})
+      });
+      if (!res.ok){ toast("Error"); return; }
+      await loadAssignments();
+    };
+  });
 }
 
-// bootstrap
-loadHouseList().catch(()=>{});
+// boot
+loadHouseList().catch(err => toast(err.message));
 </script>
 </body>
 </html>
