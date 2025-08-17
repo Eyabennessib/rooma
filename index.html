@@ -1,170 +1,379 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
   <title>Roomate – Chore Rotation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 24px; max-width: 900px; }
-    h1 { margin-bottom: 4px; }
-    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); }
-    form, .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; }
-    input, button { padding: 10px; font-size: 14px; }
-    button { cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
-    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#eee; }
-    .row { display:flex; gap:8px; flex-wrap: wrap; }
-    .muted { color:#666; font-size: 12px; }
+    :root{
+      --bg:#0f172a;          /* slate-900 */
+      --card:#111827;        /* gray-900 */
+      --muted:#94a3b8;       /* slate-400 */
+      --text:#e5e7eb;        /* gray-200 */
+      --accent:#22d3ee;      /* cyan-400 */
+      --ok:#34d399;          /* emerald-400 */
+      --warn:#f59e0b;        /* amber-500 */
+      --err:#ef4444;         /* red-500 */
+      --border:#1f2937;      /* gray-800 */
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; padding:24px; font-family: ui-sans-serif, system-ui, Arial;
+      background: radial-gradient(1200px 600px at 10% -10%, #0b1025, transparent),
+                  radial-gradient(800px 500px at 90% 0%, #10253a, transparent),
+                  var(--bg);
+      color:var(--text);
+    }
+    header{display:flex; gap:12px; justify-content:space-between; align-items:center; margin-bottom:18px}
+    .title{font-size:28px; font-weight:700; letter-spacing:.3px}
+    .lang{display:flex; gap:8px}
+    .pill{
+      border:1px solid var(--border); padding:6px 10px; border-radius:999px; color:var(--muted); cursor:pointer;
+      background: linear-gradient(180deg, #0f1a31, #0b1224);
+    }
+    .pill.active{color:var(--text); border-color:var(--accent); box-shadow:0 0 0 1px #0ff3 inset}
+    .grid{display:grid; gap:16px; grid-template-columns: repeat(auto-fit,minmax(280px,1fr));}
+    .card{
+      border:1px solid var(--border); border-radius:16px; padding:16px;
+      background: linear-gradient(180deg, #0f1a31, #0c1428);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    h3{margin:0 0 10px 0; font-size:16px}
+    input, button, select{
+      width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+      background:#0b1326; color:var(--text); outline:none;
+    }
+    input:focus{border-color:var(--accent)}
+    button{
+      margin-top:8px; cursor:pointer; font-weight:600;
+      background:linear-gradient(180deg, #1c2d4f, #152440); border-color:#213257;
+    }
+    button.primary{background:linear-gradient(180deg, #0ea5b0, #0891a6); border-color:#0ea5b0; color:#001b22}
+    .muted{color:var(--muted); font-size:12px}
+    table{width:100%; border-collapse:collapse; margin-top:10px}
+    th, td{border-bottom:1px solid var(--border); padding:8px; text-align:left; font-size:14px}
+    .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#1f2937; color:#cbd5e1}
+    .badge.ok{background:#06381f; color:#a7f3d0}
+    .toast{
+      position:fixed; right:16px; bottom:16px; padding:12px 14px; border-radius:12px; font-size:14px;
+      background:#0b1326; border:1px solid var(--border); color:var(--text); box-shadow:0 10px 30px rgba(0,0,0,.3)
+    }
+    .toast.err{border-color:var(--err); color:#fecaca}
+    .section-title{font-size:14px; color:#cbd5e1; margin:2px 0 10px}
+    .kicker{color:var(--muted); font-size:13px}
   </style>
 </head>
 <body>
-  <h1>Roomate</h1>
-  <div class="muted">Share chores fairly. No drama, just rotations.</div>
+  <header>
+    <div>
+      <div class="title">Roomate</div>
+      <div class="kicker" data-i="tagline">Share chores fairly. No drama, just rotations.</div>
+    </div>
+    <div class="lang">
+      <button class="pill active" id="lang-en">EN</button>
+      <button class="pill" id="lang-fr">FR</button>
+    </div>
+  </header>
 
-  <div class="grid" style="margin-top:20px">
-    <form id="houseForm">
-      <h3>Create Household</h3>
-      <input id="houseName" placeholder="Household name" required />
-      <button type="submit">Create</button>
-      <div class="muted" id="houseInfo"></div>
-    </form>
-
-    <form id="memberForm">
-      <h3>Add Member</h3>
-      <input id="memberName" placeholder="Member name" required />
-      <input id="memberEmail" placeholder="Email (optional)" />
-      <button type="submit">Add</button>
-    </form>
-
-    <form id="choreForm">
-      <h3>Add Chore</h3>
-      <input id="choreTitle" placeholder="Chore title (e.g., Kitchen)" required />
-      <button type="submit">Add</button>
-    </form>
-
-    <div class="card">
-      <h3>Generate Weekly Rotation</h3>
-      <div class="row">
-        <input id="weekStart" type="date" />
-        <button id="rotateBtn">Create assignments</button>
-      </div>
-      <div class="muted">Leave date blank to use this week’s Monday.</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="section-title" data-i="activeHouse">Active household</div>
+    <div id="houseInfo" class="muted">—</div>
+    <div class="row" style="margin-top:8px">
+      <select id="houseSelect"></select>
+      <button id="useHouseBtn" class="primary" data-i="useThis">Use this</button>
     </div>
   </div>
 
-  <div class="card" style="margin-top:20px">
-    <h3>Current Week Assignments</h3>
-    <div class="row">
-      <input id="filterWeek" type="date" />
-      <button id="loadWeek">Load</button>
+  <div class="grid">
+    <div class="card">
+      <h3 data-i="createHouse">Create Household</h3>
+      <input id="houseName" placeholder="Household name"/>
+      <button id="createHouseBtn" class="primary" data-i="create">Create</button>
+      <div class="muted" style="margin-top:6px" data-i="houseHelp">Give it a short name (e.g., Flat 12B).</div>
     </div>
-    <table id="assignTable" style="margin-top:10px">
+
+    <div class="card">
+      <h3 data-i="addMember">Add Member</h3>
+      <input id="memberName" placeholder="Name"/>
+      <input id="memberEmail" placeholder="Email (optional)" style="margin-top:6px"/>
+      <button id="addMemberBtn" data-i="add">Add</button>
+      <div class="muted" style="margin-top:6px" data-i="memberHelp">Create/select a household first.</div>
+    </div>
+
+    <div class="card">
+      <h3 data-i="addChore">Add Chore</h3>
+      <input id="choreTitle" placeholder="e.g., Kitchen, Bathroom"/>
+      <button id="addChoreBtn" data-i="add">Add</button>
+    </div>
+
+    <div class="card">
+      <h3 data-i="rotation">Generate Weekly Rotation</h3>
+      <div class="row">
+        <input id="weekStart" type="date"/>
+        <button id="rotateBtn" class="primary" data-i="generate">Create assignments</button>
+      </div>
+      <div class="muted" style="margin-top:6px" data-i="mondayNote">Leave blank to use this week’s Monday.</div>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top:16px">
+    <div class="card">
+      <h3 data-i="members">Members</h3>
+      <ul id="membersList" class="muted" style="list-style:none; padding-left:0; margin:0"></ul>
+    </div>
+    <div class="card">
+      <h3 data-i="chores">Chores</h3>
+      <ul id="choresList" class="muted" style="list-style:none; padding-left:0; margin:0"></ul>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3 data-i="currentWeek">Current Week Assignments</h3>
+    <div class="row">
+      <input id="filterWeek" type="date"/>
+      <button id="loadWeek" data-i="load">Load</button>
+    </div>
+    <table id="assignTable">
       <thead>
-        <tr><th>Chore</th><th>Assigned To</th><th>Status</th><th>Proof</th><th>Action</th></tr>
+        <tr>
+          <th data-i="thChore">Chore</th>
+          <th data-i="thAssigned">Assigned To</th>
+          <th data-i="thStatus">Status</th>
+          <th data-i="thProof">Proof</th>
+          <th data-i="thAction">Action</th>
+        </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
 
-<script>
-const API = "http://localhost:5000/api";
+  <div id="toast" class="toast" style="display:none"></div>
 
+<script>
+const API = "http://127.0.0.1:5000/api";
+
+const i18n = {
+  en: {
+    tagline: "Share chores fairly. No drama, just rotations.",
+    activeHouse: "Active household",
+    useThis: "Use this",
+    createHouse: "Create Household",
+    create: "Create",
+    houseHelp: "Give it a short name (e.g., Flat 12B).",
+    addMember: "Add Member",
+    add: "Add",
+    memberHelp: "Create/select a household first.",
+    addChore: "Add Chore",
+    rotation: "Generate Weekly Rotation",
+    generate: "Create assignments",
+    mondayNote: "Leave blank to use this week’s Monday.",
+    members: "Members",
+    chores: "Chores",
+    currentWeek: "Current Week Assignments",
+    load: "Load",
+    thChore: "Chore",
+    thAssigned: "Assigned To",
+    thStatus: "Status",
+    thProof: "Proof",
+    thAction: "Action",
+    done: "Mark done",
+    noHouse: "Create a household first.",
+    created: "Household created.",
+    memberAdded: "Member added.",
+    choreAdded: "Chore added.",
+    generated: "Assignments created.",
+    loaded: "Assignments loaded.",
+    err: "Something went wrong."
+  },
+  fr: {
+    tagline: "Partagez les tâches équitablement. Zéro drama, juste des rotations.",
+    activeHouse: "Colocation active",
+    useThis: "Utiliser",
+    createHouse: "Créer une colocation",
+    create: "Créer",
+    houseHelp: "Donnez-lui un nom court (ex: Appart 12B).",
+    addMember: "Ajouter un membre",
+    add: "Ajouter",
+    memberHelp: "Créez/sélectionnez d’abord une colocation.",
+    addChore: "Ajouter une tâche",
+    rotation: "Générer la rotation hebdomadaire",
+    generate: "Créer les affectations",
+    mondayNote: "Laissez vide pour utiliser le lundi de cette semaine.",
+    members: "Membres",
+    chores: "Tâches",
+    currentWeek: "Affectations de la semaine",
+    load: "Charger",
+    thChore: "Tâche",
+    thAssigned: "Assigné à",
+    thStatus: "Statut",
+    thProof: "Preuve",
+    thAction: "Action",
+    done: "Marquer fait",
+    noHouse: "Créez d’abord une colocation.",
+    created: "Colocation créée.",
+    memberAdded: "Membre ajouté.",
+    choreAdded: "Tâche ajoutée.",
+    generated: "Affectations créées.",
+    loaded: "Affectations chargées.",
+    err: "Une erreur s’est produite."
+  }
+};
+
+let lang = localStorage.getItem("roomate_lang") || "en";
 let householdId = null;
 
-// Helpers
-function isoMonday(d) {
-  const dt = d ? new Date(d) : new Date();
-  const day = dt.getDay(); // 0=Sun..6=Sat
-  const diff = (day === 0 ? -6 : 1) - day; // shift to Monday
-  const mon = new Date(dt);
-  mon.setDate(dt.getDate() + diff);
-  mon.setHours(0,0,0,0);
-  return mon.toISOString().slice(0,10);
+function t(key){ return (i18n[lang]||i18n.en)[key] }
+function setLang(l){
+  lang = l; localStorage.setItem("roomate_lang", l);
+  document.querySelectorAll("[data-i]").forEach(el=>{ el.textContent = t(el.getAttribute("data-i")) });
+  document.querySelector("#lang-en").classList.toggle("active", lang==="en");
+  document.querySelector("#lang-fr").classList.toggle("active", lang==="fr");
 }
-function q(sel){ return document.querySelector(sel); }
-function rowHTML(a){
-  const badge = a.status === 'done' ? 'style="background:#d1f7d6"' : '';
-  return `<tr>
-    <td>${a.chore_title}</td>
-    <td>${a.member_name}</td>
-    <td><span class="badge" ${badge}>${a.status}</span></td>
-    <td>${a.proof_url ? `<a href="${a.proof_url}" target="_blank">link</a>` : ''}</td>
-    <td>${a.status==='assigned'
-      ? `<button data-id="${a.id}" class="doneBtn">Mark done</button>
-         <input placeholder="proof URL (optional)" class="proofInput" data-id="${a.id}" style="width:180px"/>`
-      : ''}</td>
-  </tr>`;
+document.querySelector("#lang-en").onclick = ()=> setLang("en");
+document.querySelector("#lang-fr").onclick = ()=> setLang("fr");
+setLang(lang);
+
+function toast(msg, isErr=false){
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.toggle("err", !!isErr);
+  el.style.display="block"; clearTimeout(el._t);
+  el._t = setTimeout(()=> el.style.display="none", 2400);
 }
+
 async function api(path, opts={}){
   const res = await fetch(`${API}${path}`, Object.assign({headers:{'Content-Type':'application/json'}}, opts));
-  if(!res.ok){ throw new Error((await res.json()).error || 'request failed'); }
+  if(!res.ok){
+    let err = t("err");
+    try { const j = await res.json(); if(j.error) err = j.error; } catch{}
+    throw new Error(err);
+  }
   return res.json();
 }
 
-// Create household
-q("#houseForm").addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  const name = q("#houseName").value.trim();
-  if(!name) return;
-  const data = await api(`/households`, {method:'POST', body: JSON.stringify({name})});
-  householdId = data.id;
-  q("#houseInfo").textContent = `Created household #${householdId} (“${data.name}”).`;
-});
-
-// Add member
-q("#memberForm").addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  if(!householdId){ alert("Create a household first."); return; }
-  const name = q("#memberName").value.trim();
-  const email = q("#memberEmail").value.trim() || null;
-  await api(`/households/${householdId}/members`, {method:'POST', body: JSON.stringify({name, email})});
-  q("#memberName").value = ""; q("#memberEmail").value="";
-  alert("Member added.");
-});
-
-// Add chore
-q("#choreForm").addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  if(!householdId){ alert("Create a household first."); return; }
-  const title = q("#choreTitle").value.trim();
-  await api(`/households/${householdId}/chores`, {method:'POST', body: JSON.stringify({title})});
-  q("#choreTitle").value = "";
-  alert("Chore added.");
-});
-
-// Rotate
-q("#rotateBtn").addEventListener("click", async ()=>{
-  if(!householdId){ alert("Create a household first."); return; }
-  const ws = q("#weekStart").value || isoMonday();
-  await api(`/households/${householdId}/rotate`, {method:'POST', body: JSON.stringify({week_start: ws})});
-  await loadAssignments();
-});
-
-// Load assignments
-q("#loadWeek").addEventListener("click", loadAssignments);
-async function loadAssignments(){
-  if(!householdId){ alert("Create a household first."); return; }
-  const ws = q("#filterWeek").value || isoMonday();
-  const data = await api(`/households/${householdId}/assignments/current?week_start=${ws}`);
-  const tbody = q("#assignTable tbody");
-  tbody.innerHTML = data.assignments.map(rowHTML).join("");
-
-  // wire up buttons
-  document.querySelectorAll(".doneBtn").forEach(btn=>{
-    btn.addEventListener("click", async (e)=>{
-      const id = e.target.getAttribute("data-id");
-      const proof = document.querySelector(`.proofInput[data-id="${id}"]`)?.value || "";
-      const res = await fetch(`${API}/assignments/${id}/complete`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({proof_url: proof})
-      });
-      if(!res.ok){ alert("Failed to complete."); return; }
-      await loadAssignments();
-    });
-  });
+function isoMonday(d){
+  const dt = d? new Date(d) : new Date();
+  const day = dt.getDay(); // 0 Sun
+  const diff = (day===0? -6 : 1) - day;
+  const mon = new Date(dt); mon.setDate(dt.getDate()+diff); mon.setHours(0,0,0,0);
+  return mon.toISOString().slice(0,10);
 }
+
+function renderList(el, items, field){
+  el.innerHTML = items.length ? items.map(x=>`<li>${x[field]}</li>`).join("") : `<li class="muted">—</li>`;
+}
+
+function rowHTML(a){
+  const status = a.status === "done" ? `<span class="badge ok">done</span>` : `<span class="badge">assigned</span>`;
+  return `<tr>
+    <td>${a.chore_title}</td>
+    <td>${a.member_name}</td>
+    <td>${status}</td>
+    <td>${a.proof_url ? `<a href="${a.proof_url}" target="_blank">link</a>` : ""}</td>
+    <td>${
+      a.status === "assigned"
+        ? `<div class="row"><input placeholder="proof URL" class="proofInput" data-id="${a.id}" style="width:180px"><button class="doneBtn" data-id="${a.id}">${t("done")}</button></div>`
+        : ""
+    }</td>
+  </tr>`;
+}
+
+async function refreshHousehold(){
+  if(!householdId){ document.getElementById("houseInfo").textContent = "—"; return; }
+  const data = await api(`/households/${householdId}`);
+  document.getElementById("houseInfo").textContent = `#${data.household.id} – ${data.household.name}`;
+  renderList(document.getElementById("membersList"), data.members, "name");
+  renderList(document.getElementById("choresList"), data.chores, "title");
+}
+
+async function loadHouseList(){
+  const sel = document.getElementById("houseSelect");
+  const list = await api(`/households`);
+  sel.innerHTML = list.households.map(h=>`<option value="${h.id}">#${h.id} – ${h.name}</option>`).join("") || `<option>—</option>`;
+}
+
+document.getElementById("useHouseBtn").onclick = async ()=>{
+  const sel = document.getElementById("houseSelect");
+  const id = Number(sel.value);
+  if(!id || isNaN(id)) return;
+  householdId = id;
+  await refreshHousehold();
+  toast(`Household #${id} loaded.`);
+};
+
+document.getElementById("createHouseBtn").onclick = async ()=>{
+  try{
+    const name = document.getElementById("houseName").value.trim();
+    if(!name) return;
+    const d = await api(`/households`, {method:"POST", body: JSON.stringify({name})});
+    householdId = d.id;
+    await loadHouseList();
+    await refreshHousehold();
+    toast(t("created"));
+  }catch(e){ toast(e.message, true); }
+};
+
+document.getElementById("addMemberBtn").onclick = async ()=>{
+  try{
+    if(!householdId){ toast(t("noHouse"), true); return; }
+    const name = document.getElementById("memberName").value.trim();
+    const email = document.getElementById("memberEmail").value.trim() || null;
+    if(!name) return;
+    await api(`/households/${householdId}/members`, {method:"POST", body: JSON.stringify({name, email})});
+    document.getElementById("memberName").value = "";
+    document.getElementById("memberEmail").value = "";
+    await refreshHousehold();
+    toast(t("memberAdded"));
+  }catch(e){ toast(e.message, true); }
+};
+
+document.getElementById("addChoreBtn").onclick = async ()=>{
+  try{
+    if(!householdId){ toast(t("noHouse"), true); return; }
+    const title = document.getElementById("choreTitle").value.trim();
+    if(!title) return;
+    await api(`/households/${householdId}/chores`, {method:"POST", body: JSON.stringify({title})});
+    document.getElementById("choreTitle").value = "";
+    await refreshHousehold();
+    toast(t("choreAdded"));
+  }catch(e){ toast(e.message, true); }
+};
+
+document.getElementById("rotateBtn").onclick = async ()=>{
+  try{
+    if(!householdId){ toast(t("noHouse"), true); return; }
+    const ws = document.getElementById("weekStart").value || isoMonday();
+    await api(`/households/${householdId}/rotate`, {method:"POST", body: JSON.stringify({week_start: ws})});
+    await loadAssignments();
+    toast(t("generated"));
+  }catch(e){ toast(e.message, true); }
+};
+
+document.getElementById("loadWeek").onclick = loadAssignments;
+async function loadAssignments(){
+  try{
+    if(!householdId){ toast(t("noHouse"), true); return; }
+    const ws = document.getElementById("filterWeek").value || isoMonday();
+    const data = await api(`/households/${householdId}/assignments/current?week_start=${ws}`);
+    const tbody = document.querySelector("#assignTable tbody");
+    tbody.innerHTML = data.assignments.map(rowHTML).join("") || `<tr><td colspan="5" class="muted">—</td></tr>`;
+    document.querySelectorAll(".doneBtn").forEach(btn=>{
+      btn.onclick = async ()=>{
+        const id = btn.getAttribute("data-id");
+        const proof = document.querySelector(`.proofInput[data-id="${id}"]`)?.value || "";
+        const res = await fetch(`${API}/assignments/${id}/complete`, {
+          method:"POST", headers:{'Content-Type':'application/json'}, body: JSON.stringify({proof_url: proof})
+        });
+        if(!res.ok){ toast(t("err"), true); return; }
+        await loadAssignments();
+      }
+    });
+    toast(t("loaded"));
+  }catch(e){ toast(e.message, true); }
+}
+
+// bootstrap
+loadHouseList().catch(()=>{});
 </script>
 </body>
 </html>

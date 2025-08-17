@@ -1,6 +1,9 @@
 import sqlite3, os, datetime, json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+# add near other imports
+from flask import send_from_directory
+import os
 
 DB_PATH = os.environ.get("ROOMATE_DB", "roomate.db")
 
@@ -256,6 +259,26 @@ def complete_assignment(aid):
     conn.commit()
     conn.close()
     return jsonify({"id": aid, "status": "done", "proof_url": proof_url})
+
+# NEW: serve the SPA
+@app.route("/")
+def root():
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
+
+@app.route("/favicon.ico")
+def favicon():
+    return ("", 204)
+
+# NEW: list households (handy for testing / UI)
+@app.route("/api/households", methods=["GET"])
+def list_households():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT id, name, created_at FROM households ORDER BY id DESC")
+    data = [dict(row) for row in cur.fetchall()]
+    conn.close()
+    return jsonify({"households": data})
+
 
 if __name__ == "__main__":
     init_db()
